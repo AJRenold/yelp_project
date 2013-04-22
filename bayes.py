@@ -17,8 +17,7 @@ input:
     Not useful:
     P(H) = # of not useful reviews / # of total reviews
     P(X|H) = probabilty word X in a not useful review = # of word X in not useful reviews / # of words in not useful reviews
-
-"""
+    aasdasd """
     
 
 
@@ -39,9 +38,8 @@ class NaiveBayes():
 
     len data and class_labels must be equal
 
-    v0 = only 2 class_labels accepted
+    v0 = only 2 class_labels accepted """
 
-    """
 
     def __init__(self,data,class_labels):
         assert len(data) == len(class_labels)
@@ -50,6 +48,7 @@ class NaiveBayes():
         self.labels = self.get_class_labels(class_labels)
         self.stop_words = self.get_stop_words()
         self.train()
+        self.common_words = self.find_n_most_common_words(60)
 
     def get_stop_words(self):
         stop_words = os.getcwd() + '/stop-words-english4.txt'
@@ -97,18 +96,45 @@ class NaiveBayes():
 
         return class_desc
 
+    def get_review_len_token(self,review_len):
+        if review_len <= 100:
+            return 'review_len_100'
+        elif review_len <= 200:
+            return 'review_len_200'
+        elif review_len <= 300:
+            return 'review_len_300'
+        elif review_len <= 400:
+            return 'review_len_400'
+        elif review_len <= 500:
+            return 'review_len_500'
+        elif review_len <= 600:
+            return 'review_len_600'
+        elif review_len <= 700:
+            return 'review_len_700'
+        elif review_len <= 800:
+            return 'review_len_800'
+        elif review_len <= 900:
+            return 'review_len_900'
+        elif review_len <= 1000:
+            return 'review_len_1000'
+        else:
+            return 'review_len_long'
+
     def tokenize(self, data):
         tokenized_records = []
+
         for record in data:
-            text = re.sub(r"[\n\.',\!\?\(\)\"\-\*/:]"," ",record)
+            text = re.sub(r"[\n\.,;\!\?\(\)\[\]\*/:]"," ",record)
+            text = re.sub(r"['\-\"]","",text)
             words = text.lower().split(" ")
 
             clean_words = []
+            clean_words.append(self.get_review_len_token(len(words)))
             for word in words:
                 if word != '' and word != ' ':
-                    if word in self.stop_words:
-                        pass
-                    elif '$' in word:
+                    #if word in self.stop_words:
+                    #    pass
+                    if '$' in word:
                         clean_words.append('priceMention')
                     else:
                         clean_words.append(word)
@@ -126,20 +152,58 @@ class NaiveBayes():
                 vocab_count[class_labels[i]] += 1
                 vocab_count['total'] += 1
 
-        return self.modify_vocab(vocab), vocab_count
+        return self.modify_vocab(vocab, vocab_count)
 
     def word_var(self,word):
         return str('^' + "".join([ l + "+" for l in word ]) + "$")
     
-    def modify_vocab(self,vocab):
-        
-        pattern = self.word_var("love")
-        matches = []
-        for key in vocab.keys():
-            if re.match(pattern,key):
-                matches.append([key, vocab[key]])
-        #print matches
-        return vocab
+    def modify_vocab(self,vocab, vocab_count):
+        labels = self.labels
+        ## remove words that appear less than a number of times (100)
+
+        for word in vocab.keys():
+            appears = 0
+            for label in labels:
+                appears += vocab[word][label]
+            if appears < 40:
+                #print word, vocab[word]
+                for label in labels:
+                    count_decr = vocab[word][label]
+                    vocab_count[label] -= count_decr
+                    vocab_count['total'] -= count_decr
+                del vocab[word]
+
+
+        """ # remove word if either label has less than 20
+        for word in vocab.keys():
+            deleted = False
+            for label in labels:
+                if vocab[word][label] <= 20:
+                    deleted = True
+            if deleted:
+                #print word, vocab[word]
+                for label in labels:
+                    count_decr = vocab[word][label]
+                    vocab_count[label] -= count_decr
+                    vocab_count['total'] -= count_decr
+                del vocab[word]
+        """
+
+        """
+        for word in vocab.keys():
+            deleted = False
+            for label in labels:
+                if vocab[word][label] <= 20:
+                    deleted = True
+                    #print word,label,vocab[word][label]
+                    count_decr = vocab[word][label]
+                    vocab_count[label] -= count_decr
+                    vocab_count['total'] -= count_decr
+                    del vocab[word][label]
+            #if deleted:
+                #print word, vocab[word]"""
+
+        return vocab, vocab_count
 
     def create_data_probabilities(self, vocab, vocab_count, vocab_size):
         labels = self.labels
@@ -160,6 +224,26 @@ class NaiveBayes():
         print (len(vocab.keys()))
         return len(vocab.keys())
 
+    def find_n_most_common_words(self,n):
+        data_probs = self.data_probs
+        labels = self.labels
+
+        stops = defaultdict(list)
+        for word in islice(data_probs.keys(),None):
+            for label in labels:
+                stops[label].append((abs(log(data_probs[word][label],10)),word))
+                stops[label].sort()
+                if len(stops[label]) > n:
+                    stops[label].pop()
+        words = []
+        for label in labels:
+            words.append(set([ word[1] for word in stops[label] ]))
+
+        stop_words = list(set.intersection(*words)) 
+
+        return stop_words
+
+
     def find_max_prob_dif(self):
         data_probs = self.data_probs
         class_desc = self.class_desc
@@ -171,13 +255,17 @@ class NaiveBayes():
             probs = []
             for label in labels:
                 probs.append([abs(log(data_probs[word][label],10)),label])
+
             #if probs[0][0] >= 2.6 and probs[1][0] >= 2.6 and probs[0][0] - probs[1][0] < -.25 \
             #        and probs[0][0] < 4.5 and probs[1][0] < 4.5:
             #    print word, probs, (probs[0][0] - probs[1][0])
 
-            if probs[0][0] <= 2:
-                print word, probs, (probs[0][0] - probs[1][0])
+            #if probs[0][0] <= 2:
+            #    print word, probs, (probs[0][0] - probs[1][0])
 
+
+            if abs(probs[0][0] - probs[1][0]) > 0.25 and (probs[0][0] + probs[1][0]) < 11:
+                print word, probs, (probs[0][0] - probs[1][0])
 
         print "NOT IN VOCAB 0", abs(log(1.0/(vocab_count['0']+vocab_size),10))
         print "NOT IN VOCAB 1", abs(log(1.0/(vocab_count['1']+vocab_size),10))
@@ -189,6 +277,7 @@ class NaiveBayes():
         vocab_count = self.vocab_count
         vocab_size = self.vocab_size
         labels = self.labels
+        common_words = self.common_words
 
         probs = []
         test_tuple = self.tokenize([test_tuple])[0]
@@ -203,12 +292,13 @@ class NaiveBayes():
             p = 0
             for attr in test_tuple:
                 if attr in data_probs:
-                    if data_probs[attr][label] > 0:
-                        if abs(log(data_probs[attr][label],10)) > 0:
-                            #print label, attr, abs(log(data_probs[attr][label],10))
-                            p += abs(log(data_probs[attr][label],10))
-                    else:
-                        print attr, data_probs[attr][label]
+                    if attr not in common_words:
+                        if data_probs[attr][label] > 0:
+                            if abs(log(data_probs[attr][label],10)) > 0:
+                                #print label, attr, abs(log(data_probs[attr][label],10))
+                                p += abs(log(data_probs[attr][label],10))
+                        else:
+                            print attr, data_probs[attr][label]
 
                 else:
                     p += abs(log(1.0/ (vocab_count[label] + vocab_size),10))
