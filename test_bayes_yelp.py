@@ -58,8 +58,8 @@ print "data loaded"
 clfr = NaiveBayes(data,labels)
 print "training done"
 #stops = clfr.find_n_most_common_words(50)
-"""for i in range(len(stops)):
-    print i, stops[]"""
+#for i in range(len(stops)):
+#    print i, stops[i]
 
 """a, b = stops['1'], stops['0']
 for i in range(len(a)):
