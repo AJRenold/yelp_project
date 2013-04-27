@@ -6,19 +6,18 @@ P(H|X) = P(X|H) P(H)
 
 input:
 
-    class label (H)
+class label (H)
     
-    words (X)
+words (X)
     
-    Useful:
+Useful:
     P(H) = # of useful reviews / # of total reviews
     P(X|H) = probability word X in a useful review = # of word X in useful review / # of words in useful reviews
 
-    Not useful:
+Not useful:
     P(H) = # of not useful reviews / # of total reviews
     P(X|H) = probabilty word X in a not useful review = # of word X in not useful reviews / # of words in not useful reviews
-    aasdasd """
-    
+"""
 
 
 import os
@@ -75,12 +74,12 @@ class NaiveBayes():
         return list(labels)
 
     def create_class_descriptions(self,class_labels):
+        labels = self.labels
+
         classes = Counter()
         for item in class_labels:
             classes[str(item)] += 1
             classes['total'] += 1
-
-        labels = [ label for label in classes.keys() if label != 'total' ]
 
         prob = {}
         for label in labels:
@@ -152,7 +151,7 @@ class NaiveBayes():
                 vocab_count[class_labels[i]] += 1
                 vocab_count['total'] += 1
 
-        return self.modify_vocab(vocab, vocab_count)
+        return vocab, vocab_count
 
     def word_var(self,word):
         return str('^' + "".join([ l + "+" for l in word ]) + "$")
