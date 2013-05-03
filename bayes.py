@@ -6,19 +6,18 @@ P(H|X) = P(X|H) P(H)
 
 input:
 
-    class label (H)
+class label (H)
     
-    words (X)
+words (X)
     
-    Useful:
+Useful:
     P(H) = # of useful reviews / # of total reviews
     P(X|H) = probability word X in a useful review = # of word X in useful review / # of words in useful reviews
 
-    Not useful:
+Not useful:
     P(H) = # of not useful reviews / # of total reviews
     P(X|H) = probabilty word X in a not useful review = # of word X in not useful reviews / # of words in not useful reviews
-    aasdasd """
-    
+"""
 
 
 import os
@@ -75,12 +74,13 @@ class NaiveBayes():
         return list(labels)
 
     def create_class_descriptions(self,class_labels):
+        labels = self.labels
+
         classes = Counter()
         for item in class_labels:
             classes[str(item)] += 1
             classes['total'] += 1
 
-        labels = [ label for label in classes.keys() if label != 'total' ]
 
         prob = {}
         for label in labels:
@@ -152,20 +152,21 @@ class NaiveBayes():
                 vocab_count[class_labels[i]] += 1
                 vocab_count['total'] += 1
 
-        return self.modify_vocab(vocab, vocab_count)
+        vocab, vocab_count = self.modify_vocab(vocab, vocab_count)
+        return vocab, vocab_count
 
     def word_var(self,word):
         return str('^' + "".join([ l + "+" for l in word ]) + "$")
     
     def modify_vocab(self,vocab, vocab_count):
         labels = self.labels
-        ## remove words that appear less than a number of times (100)
 
+        ## remove words that appear less than a number of times (100)
         for word in vocab.keys():
             appears = 0
             for label in labels:
                 appears += vocab[word][label]
-            if appears < 40:
+            if appears < 110:
                 #print word, vocab[word]
                 for label in labels:
                     count_decr = vocab[word][label]
@@ -269,6 +270,37 @@ class NaiveBayes():
 
         print "NOT IN VOCAB 0", abs(log(1.0/(vocab_count['0']+vocab_size),10))
         print "NOT IN VOCAB 1", abs(log(1.0/(vocab_count['1']+vocab_size),10))
+
+    def max_entropy(self, n):
+        data_probs = self.data_probs
+        class_desc = self.class_desc
+        vocab_count = self.vocab_count
+        vocab_size = self.vocab_size
+        labels = self.labels
+
+        max_entropy = []
+
+        for word in islice(data_probs.keys(),None):
+            probs = []
+            for label in labels:
+                probs.append([abs(log(data_probs[word][label],10)),label ])
+            
+            total_info_gain = abs(probs[0][0]-probs[1][0])
+            
+            """
+            last_prob = 0
+            total_info_gain = 0
+            for prob in probs:
+                total_info_gain += abs(prob - last_prob)
+                last_prob = prob
+            """
+            max_entropy.append([total_info_gain,word,probs[0][0],probs[0][1],probs[1][0],probs[1][1]])
+            max_entropy.sort(reverse=True)
+            
+            if len(max_entropy) > n:
+                max_entropy.pop()
+
+        return max_entropy
 
 
     def label_new(self, test_tuple):
