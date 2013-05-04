@@ -35,7 +35,10 @@ correct_labels = []
 
 for review in islice(reviews,None,200000):
     if 'Restaurants' in business_dict[review['business_id']]['categories']:
-        if review['votes']['useful'] >= 2:
+        if review['votes']['useful'] >= 4:
+            data.append(review['text'])
+            labels.append('2')
+        elif review['votes']['useful'] < 4 and review['votes']['useful'] >= 1:
             data.append(review['text'])
             labels.append('1')
         elif review['votes']['useful'] == 0:
@@ -45,7 +48,10 @@ for review in islice(reviews,None,200000):
 for review in islice(reviews,200000,None):
     if 'Restaurants' in business_dict[review['business_id']]['categories']:
 
-        if review['votes']['useful'] >= 1:
+        if review['votes']['useful'] >= 4:
+            test.append(review['text'])
+            correct_labels.append('2')
+        elif review['votes']['useful'] < 4 and review['votes']['useful'] >= 1:
             test.append(review['text'])
             correct_labels.append('1')
         elif review['votes']['useful'] == 0:
@@ -81,6 +87,8 @@ for i,item in enumerate(test):
         matches['not-labeled'][correct_labels[i]] += 1
     matches['total'][correct_labels[i]] += 1
 
-#print matches
-print 'TP',matches['labeled']['1'],'FN',matches['not-labeled']['1'], 'class 1 percent correct', (float(matches['labeled']['1']) / matches['total']['1'])
-print 'FP',matches['not-labeled']['0'], 'TN',matches['labeled']['0'], 'class 0 percent correct', (float(matches['labeled']['0']) / matches['total']['0'] )
+print matches
+print 'class 2 percent correct', (float(matches['labeled']['2']) / matches['total']['2'])
+print 'class 1 percent correct', (float(matches['labeled']['1']) / matches['total']['1'] )
+print 'class 0 percent correct', (float(matches['labeled']['0']) / matches['total']['0'] )
+

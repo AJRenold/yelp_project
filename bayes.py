@@ -81,7 +81,6 @@ class NaiveBayes():
             classes[str(item)] += 1
             classes['total'] += 1
 
-
         prob = {}
         for label in labels:
             prob[label] = float(classes[label]) / classes['total']
@@ -152,7 +151,9 @@ class NaiveBayes():
                 vocab_count[class_labels[i]] += 1
                 vocab_count['total'] += 1
 
-        vocab, vocab_count = self.modify_vocab(vocab, vocab_count)
+
+        #vocab, vocab_count = self.modify_vocab(vocab, vocab_count)
+
         return vocab, vocab_count
 
     def word_var(self,word):
