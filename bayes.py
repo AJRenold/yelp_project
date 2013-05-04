@@ -17,7 +17,7 @@ Useful:
 Not useful:
     P(H) = # of not useful reviews / # of total reviews
     P(X|H) = probabilty word X in a not useful review = # of word X in not useful reviews / # of words in not useful reviews
-"""
+    """
 
 
 import os
