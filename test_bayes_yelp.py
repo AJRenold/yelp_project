@@ -67,6 +67,10 @@ print "training done"
 #for i in range(len(stops)):
 #    print i, stops[i]
 
+#max_ent = clfr.max_entropy(100)
+#for i in range(len(max_ent)):
+#    print i, max_ent[i]
+
 """a, b = stops['1'], stops['0']
 for i in range(len(a)):
     print i, a[i], b[i]"""
