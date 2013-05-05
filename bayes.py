@@ -123,14 +123,14 @@ class NaiveBayes():
         tokenized_records = []
 
         for record in data:
-            text = re.sub(r"[\n\.,;\!\?\(\)\[\]\*/:]"," ",record)
+            text = re.sub(r"[\n\.,;\!\?\(\)\[\]\*/:~]"," ",record)
             text = re.sub(r"['\-\"]","",text)
             words = text.lower().split(" ")
 
             clean_words = []
             clean_words.append(self.get_review_len_token(len(words)))
             for word in words:
-                if word != '' and word != ' ':
+                if word != '' and word != ' ' and len(word) > 1:
                     #if word in self.stop_words:
                     #    pass
                     if '$' in word:
@@ -167,7 +167,7 @@ class NaiveBayes():
             appears = 0
             for label in labels:
                 appears += vocab[word][label]
-            if appears < 110:
+            if appears < 80:
                 #print word, vocab[word]
                 for label in labels:
                     count_decr = vocab[word][label]
