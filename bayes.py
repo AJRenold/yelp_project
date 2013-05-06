@@ -46,6 +46,7 @@ class NaiveBayes():
         self.class_labels = class_labels
         self.labels = self.get_class_labels(class_labels)
         self.stop_words = self.get_stop_words()
+        self.stop_names = self.get_stop_names()
         self.train()
         self.common_words = self.find_n_most_common_words(60)
 
@@ -60,6 +61,18 @@ class NaiveBayes():
             if word not in stops:
                 stops[word] = True
         return stops
+    
+    def get_stop_names(self):
+        f = open('stop_names.csv')
+
+        stop_names = {}
+
+        for line in islice(f,None):
+            word = line.lower().strip()[line.find(',')+1:]
+            if word not in stop_names:
+                stop_names[word] = True
+
+        return stop_names
 
 
     def train(self):
@@ -120,6 +133,7 @@ class NaiveBayes():
             return 'review_len_long'
 
     def tokenize(self, data):
+        stop_names = self.stop_names
         tokenized_records = []
 
         for record in data:
@@ -131,9 +145,9 @@ class NaiveBayes():
             clean_words.append(self.get_review_len_token(len(words)))
             for word in words:
                 if word != '' and word != ' ' and len(word) > 1:
-                    #if word in self.stop_words:
-                    #    pass
-                    if '$' in word:
+                    if word in self.stop_names:
+                        pass
+                    elif '$' in word:
                         clean_words.append('priceMention')
                     else:
                         clean_words.append(word)
@@ -151,8 +165,7 @@ class NaiveBayes():
                 vocab_count[class_labels[i]] += 1
                 vocab_count['total'] += 1
 
-
-        #vocab, vocab_count = self.modify_vocab(vocab, vocab_count)
+        vocab, vocab_count = self.modify_vocab(vocab, vocab_count)
 
         return vocab, vocab_count
 

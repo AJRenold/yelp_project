@@ -35,7 +35,7 @@ correct_labels = []
 
 for review in islice(reviews,None,200000):
     if 'Restaurants' in business_dict[review['business_id']]['categories']:
-        if review['votes']['useful'] >= 1:
+        if review['votes']['useful'] >= 4:
             data.append(review['text'])
             labels.append('1')
         elif review['votes']['useful'] == 0:
@@ -45,7 +45,7 @@ for review in islice(reviews,None,200000):
 for review in islice(reviews,200000,None):
     if 'Restaurants' in business_dict[review['business_id']]['categories']:
 
-        if review['votes']['useful'] >= 4:
+        if review['votes']['useful'] >= 1:
             test.append(review['text'])
             correct_labels.append('1')
         elif review['votes']['useful'] == 0:
@@ -61,9 +61,9 @@ print "training done"
 #for i in range(len(stops)):
 #    print i, stops[i]
 
-max_ent = clfr.max_entropy(200)
-for i in range(len(max_ent)):
-    print i, max_ent[i]
+#max_ent = clfr.max_entropy(200)
+#for i in range(len(max_ent)):
+#    print i, max_ent[i]
 
 """a, b = stops['1'], stops['0']
 for i in range(len(a)):
