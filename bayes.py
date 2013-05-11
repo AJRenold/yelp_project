@@ -1,25 +1,5 @@
 #!/usr/bin/env python
 
-"""
-
-P(H|X) = P(X|H) P(H)
-
-input:
-
-class label (H)
-    
-words (X)
-    
-Useful:
-    P(H) = # of useful reviews / # of total reviews
-    P(X|H) = probability word X in a useful review = # of word X in useful review / # of words in useful reviews
-
-Not useful:
-    P(H) = # of not useful reviews / # of total reviews
-    P(X|H) = probabilty word X in a not useful review = # of word X in not useful reviews / # of words in not useful reviews
-"""
-
-
 import os
 from collections import Counter
 from collections import defaultdict
@@ -49,6 +29,8 @@ class NaiveBayes():
         self.stop_names = self.get_stop_names()
         self.train()
         self.common_words = self.find_n_most_common_words(60)
+        self.max_entropy_words = self.max_entropy_dict(2000)
+        
 
     def get_stop_words(self):
         stop_words = os.getcwd() + '/stop-words-english4.txt'
@@ -137,7 +119,10 @@ class NaiveBayes():
         tokenized_records = []
 
         for record in data:
+            #text = re.sub(r"(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?]))", \
+            #"webURLMention",record)
             text = re.sub(r"[\n\.,;\!\?\(\)\[\]\*/:~]"," ",record)
+            text = re.sub(r"(\b[\d]+\b|\b[\d]+[a-z]+\b)"," ",text)
             text = re.sub(r"['\-\"]","",text)
             words = text.lower().split(" ")
 
@@ -150,6 +135,7 @@ class NaiveBayes():
                     elif '$' in word:
                         clean_words.append('priceMention')
                     else:
+                        #word = re.sub(r'(.)\1+', r'\1', word)
                         clean_words.append(word)
 
             tokenized_records.append(clean_words)
@@ -180,7 +166,7 @@ class NaiveBayes():
             appears = 0
             for label in labels:
                 appears += vocab[word][label]
-            if appears < 80:
+            if appears < 50:
                 #print word, vocab[word]
                 for label in labels:
                     count_decr = vocab[word][label]
@@ -316,6 +302,16 @@ class NaiveBayes():
 
         return max_entropy
 
+    def max_entropy_dict(self,n):
+
+        max_results = self.max_entropy(n)
+
+        max_entropy_words = defaultdict(bool)
+        for res in max_results:
+            max_entropy_words[res[1]] = True
+
+        return max_entropy_words
+
 
     def label_new(self, test_tuple):
         data_probs = self.data_probs
@@ -323,7 +319,8 @@ class NaiveBayes():
         vocab_count = self.vocab_count
         vocab_size = self.vocab_size
         labels = self.labels
-        common_words = self.common_words
+        stop_words = self.common_words
+        max_entropy_words = self.max_entropy_words
 
         probs = []
         test_tuple = self.tokenize([test_tuple])[0]
@@ -338,7 +335,7 @@ class NaiveBayes():
             p = 0
             for attr in test_tuple:
                 if attr in data_probs:
-                    if attr not in common_words:
+                    if attr not in stop_words and attr in max_entropy_words:
                         if data_probs[attr][label] > 0:
                             if abs(log(data_probs[attr][label],10)) > 0:
                                 #print label, attr, abs(log(data_probs[attr][label],10))
