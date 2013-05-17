@@ -20,20 +20,22 @@ class NaiveBayes():
     v0 = only 2 class_labels accepted """
 
 
-    def __init__(self,data,class_labels):
+    def __init__(self,data,class_labels, num_stop_words=60, max_vocab=2000, min_word_frequency=60):
         assert len(data) == len(class_labels)
         self.data = data
         self.class_labels = class_labels
+        self.min_word_frequency = min_word_frequency
+
         self.labels = self.get_class_labels(class_labels)
         self.stop_words = self.get_stop_words()
         self.stop_names = self.get_stop_names()
         self.train()
-        self.common_words = self.find_n_most_common_words(60)
-        self.max_entropy_words = self.max_entropy_dict(2000)
-        
+        self.common_words = self.find_n_most_common_words(num_stop_words)
+        self.max_entropy_words = self.max_entropy_dict(max_vocab)
+
 
     def get_stop_words(self):
-        stop_words = os.getcwd() + '/stop-words-english4.txt'
+        stop_words = os.getcwd() + '/stop-words-english3-google.txt'
         f = open(stop_words,'r')
 
         stops = defaultdict(bool)
@@ -60,7 +62,7 @@ class NaiveBayes():
     def train(self):
         self.class_desc = self.create_class_descriptions(self.class_labels)
         self.tokenized_records = self.tokenize(self.data)
-        self.vocab, self.vocab_count = self.create_vocab(self.tokenized_records, self.class_labels)
+        self.vocab, self.vocab_count = self.create_vocab(self.tokenized_records, self.class_labels, self.min_word_frequency)
         self.vocab_size = self.get_vocab_size(self.vocab)
         self.data_probs = self.create_data_probabilities(self.vocab, self.vocab_count, self.vocab_size)
 
@@ -115,12 +117,13 @@ class NaiveBayes():
             return 'review_len_long'
 
     def tokenize(self, data):
+        stop_words = self.stop_words
         stop_names = self.stop_names
         tokenized_records = []
 
         for record in data:
-            #text = re.sub(r"(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?]))", \
-            #"webURLMention",record)
+            text = re.sub(r"(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?]))", \
+            "webURLMention",record)
             text = re.sub(r"[\n\.,;\!\?\(\)\[\]\*/:~]"," ",record)
             text = re.sub(r"(\b[\d]+\b|\b[\d]+[a-z]+\b)"," ",text)
             text = re.sub(r"['\-\"]","",text)
@@ -130,19 +133,23 @@ class NaiveBayes():
             clean_words.append(self.get_review_len_token(len(words)))
             for word in words:
                 if word != '' and word != ' ' and len(word) > 1:
-                    if word in self.stop_names:
+                    if word in stop_words:
+                        pass
+                    elif word in self.stop_names:
                         pass
                     elif '$' in word:
-                        clean_words.append('priceMention')
-                    else:
+                        clean_words.append('price_mention')
+                    #else:
                         #word = re.sub(r'(.)\1+', r'\1', word)
+                    #    clean_words.append(word)
+                    else:
                         clean_words.append(word)
 
             tokenized_records.append(clean_words)
 
         return tokenized_records
 
-    def create_vocab(self, tokenized_records, class_labels):
+    def create_vocab(self, tokenized_records, class_labels, min_word_frequency):
         vocab_count = Counter()
         vocab = defaultdict(Counter)
         for i,record in enumerate(tokenized_records):
@@ -151,14 +158,14 @@ class NaiveBayes():
                 vocab_count[class_labels[i]] += 1
                 vocab_count['total'] += 1
 
-        vocab, vocab_count = self.modify_vocab(vocab, vocab_count)
+        vocab, vocab_count = self.modify_vocab(vocab, vocab_count, min_word_frequency)
 
         return vocab, vocab_count
 
     def word_var(self,word):
         return str('^' + "".join([ l + "+" for l in word ]) + "$")
     
-    def modify_vocab(self,vocab, vocab_count):
+    def modify_vocab(self,vocab, vocab_count, min_word_frequency):
         labels = self.labels
 
         ## remove words that appear less than a number of times (100)
@@ -166,7 +173,7 @@ class NaiveBayes():
             appears = 0
             for label in labels:
                 appears += vocab[word][label]
-            if appears < 50:
+            if appears < min_word_frequency:
                 #print word, vocab[word]
                 for label in labels:
                     count_decr = vocab[word][label]
@@ -277,6 +284,9 @@ class NaiveBayes():
         vocab_count = self.vocab_count
         vocab_size = self.vocab_size
         labels = self.labels
+
+        if len(labels) < 2:
+            return [ [0, word] for word in data_probs.keys() ]
 
         max_entropy = []
 

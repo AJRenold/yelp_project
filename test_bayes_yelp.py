@@ -55,15 +55,15 @@ for review in islice(reviews,200000,None):
 print "data loaded"
 
 
-clfr = NaiveBayes(data,labels)
+clfr = NaiveBayes(data,labels, 60, 2000, 50)
 print "training done"
-#stops = clfr.find_n_most_common_words(50)
-#for i in range(len(stops)):
-#    print i, stops[i]
+stops = clfr.find_n_most_common_words(50)
+for i in range(len(stops)):
+    print i, stops[i]
 
 max_ent = clfr.max_entropy(20)
 for i in range(len(max_ent)):
-    print i, max_ent[i]
+    print i, max_ent[i][1]
 
 """a, b = stops['1'], stops['0']
 for i in range(len(a)):
